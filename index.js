@@ -55,6 +55,13 @@ function checkUptodate() {
 function output(cards) {
   const handlers = {
     console: cards => console.log(cards),
+    markdown: cards => {
+      const header = Object.keys(cards[0]);
+      const header2 = header.map(col => _.repeat('-', col.length));
+      const contents = _.map(cards, card => _.values(card));
+      const lines = [header, header2].concat(contents);
+      return fs.writeFileAsync('cards.md', lines.map(line => line.join(' | ')).join('\n'));
+    },
     csv: cards => {
       const header = Object.keys(cards[0]);
       const contents = _.map(cards, card => `"${card.title}",${card.rating}`);
