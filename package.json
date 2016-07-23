@@ -4,10 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "MIT",
+  "engines" : { "node" : ">=6.0" },
   "dependencies": {
     "bluebird": "^3.4.1",
     "lodash": "^4.13.1",
