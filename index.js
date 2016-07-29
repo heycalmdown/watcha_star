@@ -6,6 +6,7 @@ const fs = Promise.promisifyAll(require('fs'));
 
 const CARDS = 'cards.json'
 
+
 // stolen from http://stackoverflow.com/questions/29375100/while-loop-using-bluebird-promises/29396005#29396005
 function promiseWhile(predicate, action) {
   function loop(result) {
@@ -15,7 +16,9 @@ function promiseWhile(predicate, action) {
   return Promise.resolve().then(loop);
 }
 
+
 let cards = [];
+
 
 function getPage(username, page) {
   return request.get(`https://watcha.net/v2/users/${username}/movies.json?filter%5Bsorting%5D=my_rating&page=${page}`)
@@ -26,10 +29,12 @@ function getPage(username, page) {
     });
 }
 
+
 function readStars() {
   return fs.readFileAsync(CARDS, 'utf-8')
     .then(JSON.parse).catch(err=> console.error(err));
 }
+
 
 function gatherStars(username) {
   if (!username) throw new Error('no username');
@@ -47,29 +52,41 @@ const state = {
   output: argv.output || 'console'
 };
 
+
 function checkUptodate() {
   if (state.forceUpdate) return Promise.reject(new Error('out of date'));
   return fs.accessAsync(CARDS); 
 }
 
+
 function output(cards) {
-  const handlers = {
-    console: cards => console.log(cards),
-    markdown: cards => {
-      const header = Object.keys(cards[0]);
-      const header2 = header.map(col => _.repeat('-', col.length));
-      const contents = _.map(cards, card => _.values(card));
-      const lines = [header, header2].concat(contents);
-      return fs.writeFileAsync('cards.md', lines.map(line => line.join(' | ')).join('\n'));
-    },
-    csv: cards => {
-      const header = Object.keys(cards[0]);
-      const contents = _.map(cards, card => `"${card.title}",${card.rating}`);
-      return fs.writeFileAsync('cards.csv', [header].concat(contents).join('\n'));
-    }
+  const con = cards => {
+    console.log(cards);
+    const total = cards.length;
+    const grouped = _.groupBy(cards, 'rating');
+    const ratings = _(grouped).keys().sortBy().value();
+    _.each(ratings, rating => {
+      const group = grouped[rating];
+      const length = group.length;
+      console.log(`${rating}\t${Math.floor(length / total * 1000) / 10}%(${group.length})`);
+    });
   }
+  const csv = cards => {
+    const header = Object.keys(cards[0]);
+    const contents = _.map(cards, card => `"${card.title}",${card.rating}`);
+    return fs.writeFileAsync('cards.csv', [header].concat(contents).join('\n'));
+  };
+  const markdown = cards => {
+    const header = Object.keys(cards[0]);
+    const header2 = header.map(col => _.repeat('-', col.length));
+    const contents = _.map(cards, card => _.values(card));
+    const lines = [header, header2].concat(contents);
+    return fs.writeFileAsync('cards.md', lines.map(line => line.join(' | ')).join('\n'));
+  }
+  const handlers = { console: con, markdown, csv };
   return (handlers[state.output] || handlers.console)(cards);
 }
+
 
 function main() {
   checkUptodate()
@@ -82,5 +99,6 @@ function main() {
     .then(output)
     .catch(err => console.error(err));
 }
+
 
 main();
